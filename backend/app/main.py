@@ -7,6 +7,7 @@ from app.agent import run_agent
 from app.config import settings
 from app.csv_service import CsvValidationError, load_csv, profile_frame, sanitize_table_name
 from app.models import ChatRequest, ChatResponse, DatasetInfo
+from app.kpi_service import build_session_kpis
 from app.session_store import store
 
 app = FastAPI(title="Lens AI Data Analyst", version="1.0.0")
@@ -63,6 +64,18 @@ def list_datasets(session_id: str) -> dict:
         for name, frame in session.tables.items()
     ]
     return {"session_id": session.session_id, "datasets": datasets}
+
+
+@app.get("/api/kpis/{session_id}")
+def get_kpis(session_id: str) -> dict:
+    try:
+        session = store.get(session_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown session") from exc
+    return {
+        "session_id": session.session_id,
+        **build_session_kpis(session.tables),
+    }
 
 
 @app.post("/api/chat", response_model=ChatResponse)

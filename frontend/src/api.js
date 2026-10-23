@@ -26,3 +26,14 @@ export async function chat(sessionId, message) {
   if (!response.ok) throw new Error(data.detail || "Chat failed");
   return data;
 }
+
+export async function getKpis(sessionId) {
+  const response = await fetch(
+    `${API}/api/kpis/${encodeURIComponent(sessionId)}`
+  );
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.detail || "Could not load dashboard KPIs");
+  }
+  return data;
+}

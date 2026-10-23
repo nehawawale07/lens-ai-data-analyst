@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ChartPanel from "./ChartPanel.jsx";
-import { chat, createSession, uploadFiles } from "./api.js";
+import { chat, createSession, getKpis, uploadFiles } from "./api.js";
 
 const PROMPTS = [
   "Which region generated the highest revenue?",
@@ -15,6 +15,7 @@ const PROMPTS = [
 export default function App() {
   const [sessionId, setSessionId] = useState("");
   const [datasets, setDatasets] = useState([]);
+  const [kpiData, setKpiData] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -55,6 +56,12 @@ export default function App() {
     try {
       const data = await uploadFiles(sessionId, files);
       setDatasets(data.datasets);
+      try {
+        const kpis = await getKpis(sessionId);
+        setKpiData(kpis);
+      } catch (kpiError) {
+        console.error("Could not load KPI dashboard:", kpiError);
+      }
       setMessages((prev) => [
         ...prev,
         {
@@ -143,6 +150,37 @@ export default function App() {
           </div>
           {mode && <span className="mode">{mode}</span>}
         </header>
+
+        {kpiData && (
+          <section className="kpi-section" aria-label="Dataset overview">
+            <div className="kpi-heading">
+              <h2>Dataset overview</h2>
+              <span>{kpiData.dataset_count} dataset(s) loaded</span>
+            </div>
+            <div className="kpi-grid">
+              <article className="kpi-card">
+                <span>Total rows</span>
+                <strong>{Number(kpiData.total_rows || 0).toLocaleString()}</strong>
+                <small>Across uploaded datasets</small>
+              </article>
+              <article className="kpi-card">
+                <span>Total columns</span>
+                <strong>{Number(kpiData.total_columns || 0).toLocaleString()}</strong>
+                <small>Combined dataset fields</small>
+              </article>
+              <article className="kpi-card">
+                <span>Missing cells</span>
+                <strong>{Number(kpiData.total_missing_cells || 0).toLocaleString()}</strong>
+                <small>Values that need review</small>
+              </article>
+              <article className="kpi-card">
+                <span>Duplicate rows</span>
+                <strong>{kpiData.datasets.reduce((sum, ds) => sum + (ds.duplicate_rows || 0), 0).toLocaleString()}</strong>
+                <small>Across uploaded datasets</small>
+              </article>
+            </div>
+          </section>
+        )}
 
         <div className="prompts">
           {PROMPTS.map((item) => (
