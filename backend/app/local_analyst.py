@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import re
 from typing import Any
@@ -99,7 +99,7 @@ def analyze(session: Session, question: str) -> dict[str, Any]:
             ]
             answer = "Anomalies were flagged in numeric columns:\n" + "\n".join(lines)
         else:
-            answer = "No statistical outliers were flagged with |z| >= 3 or 1.5×IQR."
+            answer = "No statistical outliers were flagged with |z| >= 3 or 1.5Ã—IQR."
         return _pack(answer, reasoning, sql, chart, anomalies, tables_used)
 
     if "quality" in text or "missing" in text or "duplicate" in text:
@@ -126,6 +126,7 @@ def analyze(session: Session, question: str) -> dict[str, Any]:
 
     wants_sql = "sql" in text
     wants_chart = any(word in text for word in ("chart", "plot", "visual", "show", "trend", "graph"))
+    wants_chart = wants_chart or ("highest" in text or "most" in text or "maximum" in text) and any(term in text for term in ("revenue", "sales", "amount")) and region is not None and revenue is not None
 
     if "customer" in text and any(term in text for term in ("top", "highest", "most", "revenue", "spend")) and customer and revenue:
         limit = 5
@@ -243,7 +244,7 @@ def analyze(session: Session, question: str) -> dict[str, Any]:
 def _summary(session: Session) -> str:
     parts = ["Business snapshot from uploaded data:"]
     for name, frame in session.tables.items():
-        parts.append(f"\n**{name}** — {len(frame)} rows × {frame.shape[1]} columns.")
+        parts.append(f"\n**{name}** â€” {len(frame)} rows Ã— {frame.shape[1]} columns.")
         revenue = _col(frame, "revenue", "sales", "amount")
         region = _col(frame, "region", "country")
         product = _col(frame, "product")
@@ -264,7 +265,7 @@ def _default_chart(frame: pd.DataFrame, name: str, region: str | None, revenue: 
         tmp["_month"] = pd.to_datetime(tmp[date_col], errors="coerce").dt.to_period("M").astype(str)
         grouped = tmp.groupby("_month", dropna=True)[revenue].sum().reset_index()
         grouped.columns = ["month", "total_revenue"]
-        return chart_from_frame(grouped, "line", f"Monthly {revenue} — {name}", "month", "total_revenue")
+        return chart_from_frame(grouped, "line", f"Monthly {revenue} â€” {name}", "month", "total_revenue")
     if region and revenue:
         grouped = frame.groupby(region)[revenue].sum().reset_index().sort_values(revenue, ascending=False)
         grouped.columns = [region, "total_revenue"]
@@ -284,3 +285,4 @@ def _pack(answer, reasoning, sql, chart, anomalies, tables_used, pandas_code=Non
         "anomalies": anomalies,
         "tables_used": tables_used,
     }
+
