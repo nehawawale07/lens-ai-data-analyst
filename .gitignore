@@ -17,3 +17,6 @@ uploads
 
 # Local backup files
 *.bak
+
+# Local frontend environment files
+frontend/.env.production
